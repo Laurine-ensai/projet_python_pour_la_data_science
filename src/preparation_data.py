@@ -89,7 +89,7 @@ def joindre_communes(gdf_irve, communes):
     communes = communes.to_crs(gdf_irve.crs)  
     gdf_result = gpd.sjoin(
         gdf_irve,
-        communes[['INSEE_COM', 'geometry']],
+        communes[['INSEE_COM', 'NOM', 'geometry']],
         how="left",
         predicate="within"
     )
@@ -100,6 +100,7 @@ def ajouter_codes_geo(df_irve, gdf_result):
     df_irve = df_irve.copy()
     df_irve["code_geo_manquant"] = df_irve["code_insee_commune"].fillna(gdf_result["INSEE_COM"])
     df_irve["code_geo_total"] = gdf_result["INSEE_COM"]
+    df_irve["nom_commune"] = gdf_result["NOM"]
     return df_irve
 
 
@@ -112,4 +113,58 @@ def compter_valeurs_manquantes(df, colonnes):
 def compter_uniques(df, colonnes):
     return {col: df[col].nunique() for col in colonnes}
 
+
+def corriger_codes_incoherents(df, codes_manquants_communs):
+    """
+    Remplace le code_geo_manquant par code_geo_total pour les lignes où :
+    1. Le code actuel fait partie des codes identifiés comme problématiques.
+    2. Les noms de communes (consolidated et nom issu du géocodage) concordent.
+    """
+    mask = (
+        df["code_geo_manquant"].isin(codes_manquants_communs)
+        & df["consolidated_commune"].notna()
+        & df["nom_commune"].notna()
+        & (df["consolidated_commune"] == df["nom_commune"])
+    )
+    df.loc[mask, "code_geo_manquant"] = df.loc[mask, "code_geo_total"]
+    print(f"Correction appliquée sur {mask.sum()} lignes.")
+    return df
+
+
+def corriger_par_nom(df, codes_a_corriger):
+    """
+    Corrige les codes geo manquants en utilisant le code (issu du géocodage)
+    associé au nom de la commune.
+    """
+    mapping_commune_code = (
+        df.dropna(subset=["nom_commune", "code_geo_total"])
+            .groupby("nom_commune")["code_geo_total"]
+            .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else None)
+    )
+    mask = (
+        df["code_geo_manquant"].isin(codes_a_corriger)
+        & df["consolidated_commune"].notna()
+        & df["consolidated_commune"].isin(mapping_commune_code.index)
+    )
+    df.loc[mask, "code_geo_manquant"] = df.loc[mask, "consolidated_commune"].map(mapping_commune_code) 
+    print(f"Correction par nom de commune appliquée sur {mask.sum()} lignes.")
+    return df
+
+
+def corriger_conflit_code_postal(df, codes_a_corriger):
+    """
+    Identifie et corrige les cas où le code_geo_manquant est en réalité 
+    un code postal au lieu d'un code INSEE.
+    """
+    mask = (
+        df["code_geo_manquant"].isin(codes_a_corriger) & 
+        df["consolidated_code_postal"].notna()
+    )
+    # On vérifie si le code_geo_manquant est identique au code postal
+    # Si oui, on privilégie le code_geo_total (code INSEE issu du géocodage)
+    conflit_mask = mask & (df["code_geo_manquant"] == df["consolidated_code_postal"])
+    nb_corrections = conflit_mask.sum()
+    df.loc[conflit_mask, "code_geo_manquant"] = df.loc[conflit_mask, "code_geo_total"]
+    print(f"Correction de conflit Code Postal appliquée sur {nb_corrections} lignes.")
+    return df
 
