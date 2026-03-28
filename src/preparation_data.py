@@ -96,11 +96,16 @@ def joindre_communes(gdf_irve, communes):
     return gdf_result
 
 
-def ajouter_codes_geo(df_irve, gdf_result):
+def ajouter_codes_geo(df_irve, gdf_result, var="total"):
+    """
+    var : vaut both, manq ou total
+    """
     df_irve = df_irve.copy()
-    df_irve["code_geo_manquant"] = df_irve["code_insee_commune"].fillna(gdf_result["INSEE_COM"])
-    df_irve["code_geo_total"] = gdf_result["INSEE_COM"]
-    df_irve["nom_commune"] = gdf_result["NOM"]
+    if var != "total":
+        df_irve["code_geo_manquant"] = df_irve["code_insee_commune"].fillna(gdf_result["INSEE_COM"])
+        df_irve["nom_commune"] = gdf_result["NOM"]
+    if var != "manq" :
+        df_irve["code_geo_total"] = gdf_result["INSEE_COM"]
     return df_irve
 
 
