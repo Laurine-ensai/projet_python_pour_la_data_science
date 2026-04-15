@@ -1,19 +1,55 @@
-#Pour df_irve
+import pandas as pd
 
-df_irve = pd.read_csv(
- 'https://www.data.gouv.fr/api/1/datasets/r/eb76d20a-8501-400e-b336-d85724de5435'
-)
-
-print(f"Shape : {df_irve.shape}")
-df_irve.sample(5)
+###### 1 - Pour df_irve
 
 
-# Exemple d'agrégation complexe pour df_irve
-df_irve_agg = df_irve.groupby('code_geo_total').agg(
-    total_pdc=('nbre_pdc', 'sum'),
-    nb_operateurs=('nom_operateur', 'nunique'),
-    puissance_moyenne=('puissance_nominale', 'mean'),
-    # Calcul d'une part : on somme les 'True' (1) et on divise par le nombre de lignes
-    part_cb=('paiement_cb', lambda x: (x == True).mean() * 100),
-    part_rapide=('puissance_nominale', lambda x: (x > 22).mean() * 100)
-).reset_index()
+# part_rapide=('puissance_nominale', lambda x: (x > 22).mean() * 100)
+
+def creer_features_irve(df_irve, col_geo="code_geo_total"):
+    """
+    Crée un dataset agrégé par zone géographique à partir des bornes IRVE.
+    """
+
+    # -------------------------
+    # FEATURES NUMÉRIQUES
+    # -------------------------
+    df_agg = df_irve.groupby(col_geo).agg(
+        total_pdc=('nbre_pdc', 'sum'),
+        puissance_moyenne=('puissance_nominale', 'mean'),
+        puissance_max=('puissance_nominale', 'max'),
+        nb_operateurs=('nom_operateur', 'nunique'),
+
+        # INFRASTRUCTURE
+        pct_type_2=('prise_type_2', 'mean'),
+        pct_combo_ccs=('prise_type_combo_ccs', 'mean'),
+        pct_chademo=('prise_type_chademo', 'mean'),
+        pct_type_ef=('prise_type_ef', 'mean'),
+
+        # ACCESSIBILITÉ
+        pct_gratuit=('gratuit', 'mean'),
+        pct_paiement_cb=('paiement_cb', 'mean'),
+        pct_paiement_autre=('paiement_autre', 'mean')
+    ).reset_index()
+
+    # -------------------------
+    # TOP OPERATEUR
+    # -------------------------
+    top_operateur = df_irve.groupby(col_geo)['nom_operateur'] \
+        .agg(lambda x: x.value_counts().index[0] if len(x.value_counts()) > 0 else "inconnu") \
+        .reset_index(name='top_operateur')
+
+    # -------------------------
+    # ENVIRONNEMENT
+    # -------------------------
+    env = pd.get_dummies(df_irve['implantation_station'])
+    env[col_geo] = df_irve[col_geo]
+    env = env.groupby(col_geo).mean().reset_index()
+
+    # -------------------------
+    # FUSION
+    # -------------------------
+    df_final = df_agg \
+        .merge(top_operateur, on=col_geo, how='left') \
+        .merge(env, on=col_geo, how='left')
+
+    return df_final
