@@ -36,7 +36,7 @@ def creer_features_irve(df_irve, col_geo="code_geo_total"):
     # -------------------------
     # ENVIRONNEMENT
     # -------------------------
-    env = pd.get_dummies(df_irve['implantation_station'])
+    env = pd.get_dummies(df_irve['implantation_station_clean'])
     env[col_geo] = df_irve[col_geo]
     env = env.groupby(col_geo).mean().reset_index()
 

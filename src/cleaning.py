@@ -55,7 +55,7 @@ def clean_irve_variables_finales(df):
     vars_finales = [
         'code_geo_total',
         'nom_operateur',
-        'implantation_station',
+        'implantation_station_clean',
         'nbre_pdc',
         'puissance_nominale',
         'prise_type_ef',
@@ -109,15 +109,15 @@ def clean_irve_variables_finales(df):
         .str.strip()
     )
 
-    df["implantation_station"] = (
-        df["implantation_station"]
+    df["implantation_station_clean"] = (
+        df["implantation_station_clean"]
         .astype("string")
         .fillna("inconnu")
         .str.strip()
     )
 
     # catégorie
-    df["implantation_station"] = df["implantation_station"].astype("category")
+    df["implantation_station_clean"] = df["implantation_station_clean"].astype("category")
 
     # -----------------------------------------
     # Numériques
@@ -208,4 +208,61 @@ def garder_derniere_observation_commune(df):
 
     return df_latest
 
+
+def reparer_encodage_implantation(df):
+    """
+    Répare les caractères spéciaux mal encodés dans la colonne implantation_station.
+    """
+    replacements = {
+        "Parking priv rserv  la clientle": "Parking privé réservé à la clientèle",
+        "Parking priv  usage public": "Parking privé à usage public"
+    }
+    
+    df = df.copy()
+    if "implantation_station" in df.columns:
+        df["implantation_station"] = (
+            df["implantation_station"]
+            .replace(replacements, regex=True)
+            .str.strip()
+        )
+    return df
+
+def regrouper_implantation_station(df):
+    """
+    Simplifie les catégories d'implantation pour la modélisation.
+    """
+    mapping = {
+        "Parking privé réservé à la clientèle": "prive",
+        "Parking privé à usage public": "prive",
+        "Parking public": "public",
+        "Voirie": "voirie",
+        "Station dédiée à la recharge rapide": "rapide"
+    }
+    
+    df = df.copy()
+    if "implantation_station" in df.columns:
+        df["implantation_station_clean"] = df["implantation_station"].replace(mapping)
+        # On s'assure que les valeurs non mappées ne créent pas de problèmes
+        df["implantation_station_clean"] = df["implantation_station_clean"].astype("category")
+        
+    return df
+
+
+def imputer_valeurs_manquantes_fusion(df, cols_to_zero, cols_to_label):
+    """
+    Gère les NaN générés par la jointure.
+    df : le dataframe fusionné
+    cols_to_zero : la liste des colonnes passée depuis le notebook
+    """
+    df = df.copy()
+    
+    # Remplacement par 0 pour les colonnes numériques demandées
+    cols_num_presentes = [c for c in cols_to_zero if c in df.columns]
+    df[cols_num_presentes] = df[cols_num_presentes].fillna(0)
+    
+    # Remplacement par un label pour le top opérateur
+    cols_presentes = [c for c in cols_to_zero if c in df.columns]
+    df[cols_presentes] = df[cols_presentes].fillna('Aucun')
+ 
+    return df
 
