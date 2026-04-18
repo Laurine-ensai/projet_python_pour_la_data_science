@@ -63,26 +63,3 @@ def creer_taux_equipement_ve(df):
 
     return df
 
-def preparer_base_ve(df):
-    """
-    Pipeline complet :
-    - conserve la dernière observation par commune
-    - crée le taux de véhicules électriques
-    - garde variables utiles
-    """
-
-    df = garder_derniere_observation_commune(df)
-    df = creer_taux_equipement_ve(df)
-
-    vars_finales = [
-        "CODGEO",
-        "DATE_ARRETE",
-        "NB_VP",
-        "NB_VP_RECHARGEABLES_EL",
-        "taux_equipement_ve"
-    ]
-
-    return df[vars_finales]
-
-
-
