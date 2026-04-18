@@ -1,6 +1,8 @@
 import pandas as pd
 from shapely.geometry import Point
 import geopandas as gpd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def diagnostic_cle_jointure(df, col, nom_df):   
     total = len(df)
@@ -71,4 +73,45 @@ def compter_valeurs_manquantes(df, colonnes):
 def compter_uniques(df, colonnes):
     return {col: df[col].nunique() for col in colonnes}
 
+
+def afficher_matrice_correlation(df, method='spearman', figsize=(14, 10)):
+    """
+    Calcule et affiche la heatmap des corrélations.
+    """
+    # On ne garde que les colonnes numériques et on drop les NaN pour le calcul
+    df_num = df.select_dtypes(include=['number']).dropna()
+    corr_matrix = df_num.corr(method=method)
+
+    plt.figure(figsize=figsize)
+    sns.heatmap(
+        corr_matrix,
+        annot=True,
+        cmap='coolwarm',
+        center=0,
+        fmt=".2f",
+        linewidths=0.5
+    )
+    plt.title(f"Matrice de corrélation ({method})", fontsize=14)
+    plt.xticks(rotation=75, ha='right')
+    plt.tight_layout()
+    plt.show()
+    
+    return corr_matrix
+
+
+def identifier_fortes_correlations(corr_matrix, threshold=0.70):
+    """
+    Retourne une liste des paires de variables fortement corrélées.
+    """
+    fortes_corr = []
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            val = corr_matrix.iloc[i, j]
+            if abs(val) >= threshold:
+                fortes_corr.append({
+                    'v1': corr_matrix.columns[i],
+                    'v2': corr_matrix.columns[j],
+                    'val': val
+                })
+    return fortes_corr
 
