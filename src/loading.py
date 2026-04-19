@@ -4,9 +4,15 @@ from cartiflette import carti_download
 
 def load_irve_data(path_or_url):
     """
-    Charge les données des bornes de recharge (IRVE).
+    Charge les données IRVE et conserve uniquement les observations
+    dont created_at est antérieur ou égal à la date maximale retenue.
     """
     df = pd.read_csv(path_or_url)
+
+    df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True)
+    date_max = pd.Timestamp("2026-04-17 12:54:56.166000+00:00")
+    df = df[df["created_at"] <= date_max].copy()
+
     return df
 
 
