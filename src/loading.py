@@ -6,8 +6,7 @@ def load_irve_data(path_or_url):
     """
     Charge les données des bornes de recharge (IRVE).
     """
-    # On peut ajouter ici des paramètres de typage spécifiques si besoin
-    df = pd.read_csv(path_or_url, sep=None, engine='python')
+    df = pd.read_csv(path_or_url)
     return df
 
 
@@ -15,7 +14,7 @@ def load_revenu_data(path_or_url):
     """
     Charge les données de revenus de l'INSEE.
     """
-    df = pd.read_csv(path_or_url, sep=';', engine='python')
+    df = pd.read_csv(path_or_url, sep=';')
     return df
 
 
@@ -23,7 +22,7 @@ def load_ve_immatriculations(path_or_url):
     """
     Charge les données d'immatriculations des véhicules électriques.
     """
-    df = pd.read_csv(path_or_url, sep=None, engine='python', encoding='latin-1')
+    df = pd.read_csv(path_or_url, encoding='latin-1')
     return df
 
 

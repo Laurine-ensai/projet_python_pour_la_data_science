@@ -1,5 +1,7 @@
 import pandas as pd
 
+###### 1. NETTOYAGE BAS NIVEAU ######
+
 def nettoyer_code_insee(val):
     # Si valeur manquante ou "0.0" → NaN
     if pd.isna(val) or str(val) in ["0.0", "0"]:
@@ -22,7 +24,46 @@ def nettoyer_code_insee(val):
     # Sinon → valeur incohérente → NaN
     return pd.NA
 
+def reparer_encodage_implantation(df):
+    """
+    Répare les caractères spéciaux mal encodés dans la colonne implantation_station.
+    """
+    replacements = {
+        "Parking priv rserv  la clientle": "Parking privé réservé à la clientèle",
+        "Parking priv  usage public": "Parking privé à usage public"
+    }
+    
+    df = df.copy()
+    if "implantation_station" in df.columns:
+        df["implantation_station"] = (
+            df["implantation_station"]
+            .replace(replacements, regex=True)
+            .str.strip()
+        )
+    return df
 
+def regrouper_implantation_station(df):
+    """
+    Simplifie les catégories d'implantation pour la modélisation.
+    """
+    mapping = {
+        "Parking privé réservé à la clientèle": "prive",
+        "Parking privé à usage public": "prive",
+        "Parking public": "public",
+        "Voirie": "voirie",
+        "Station dédiée à la recharge rapide": "rapide"
+    }
+    
+    df = df.copy()
+    if "implantation_station" in df.columns:
+        df["implantation_station_clean"] = df["implantation_station"].replace(mapping)
+        # On s'assure que les valeurs non mappées ne créent pas de problèmes
+        df["implantation_station_clean"] = df["implantation_station_clean"].astype("category")
+        
+    return df
+
+
+###### 2. STANDARDISATION DES VARIABLES ######
 def standardize_all_codes(dfs_dict):
     """
     Applique le nettoyage du code INSEE sur tous les DataFrames fournis.
@@ -136,6 +177,7 @@ def clean_irve_variables_finales(df):
 
     return df
 
+###### 3. CORRECTIONS GÉOGRAPHIQUES ######
 
 def corriger_codes_incoherents(df, codes_manquants_communs):
     """
@@ -192,6 +234,8 @@ def corriger_conflit_code_postal(df, codes_a_corriger):
     return df
 
 
+###### 4. AUTRES ######
+
 def garder_derniere_observation_commune(df):
     """
     Conserve la ligne la plus récente pour chaque commune (CODGEO).
@@ -207,46 +251,6 @@ def garder_derniere_observation_commune(df):
     df_latest = df.drop_duplicates(subset="CODGEO", keep="last")
 
     return df_latest
-
-
-def reparer_encodage_implantation(df):
-    """
-    Répare les caractères spéciaux mal encodés dans la colonne implantation_station.
-    """
-    replacements = {
-        "Parking priv rserv  la clientle": "Parking privé réservé à la clientèle",
-        "Parking priv  usage public": "Parking privé à usage public"
-    }
-    
-    df = df.copy()
-    if "implantation_station" in df.columns:
-        df["implantation_station"] = (
-            df["implantation_station"]
-            .replace(replacements, regex=True)
-            .str.strip()
-        )
-    return df
-
-def regrouper_implantation_station(df):
-    """
-    Simplifie les catégories d'implantation pour la modélisation.
-    """
-    mapping = {
-        "Parking privé réservé à la clientèle": "prive",
-        "Parking privé à usage public": "prive",
-        "Parking public": "public",
-        "Voirie": "voirie",
-        "Station dédiée à la recharge rapide": "rapide"
-    }
-    
-    df = df.copy()
-    if "implantation_station" in df.columns:
-        df["implantation_station_clean"] = df["implantation_station"].replace(mapping)
-        # On s'assure que les valeurs non mappées ne créent pas de problèmes
-        df["implantation_station_clean"] = df["implantation_station_clean"].astype("category")
-        
-    return df
-
 
 def imputer_valeurs_manquantes_fusion(df, cols_to_zero, cols_to_label):
     """
