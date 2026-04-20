@@ -4,7 +4,8 @@ import geopandas as gpd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def diagnostic_cle_jointure(df, col, nom_df):   
+
+def diagnostic_cle_jointure(df, col, nom_df):
     total = len(df)
     nb_nan = df[col].isna().sum()
     nb_non_nan = total - nb_nan
@@ -37,21 +38,18 @@ def diagnostic_cle_jointure(df, col, nom_df):
 
 def creer_gdf_irve(df, long_col, lat_col, crs="EPSG:4326"):
     df = df.copy()
-    df["geometry"] = df.apply(
-        lambda row: Point(row[long_col], row[lat_col]),
-        axis=1
-    )
-    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=crs)  
+    df["geometry"] = df.apply(lambda row: Point(row[long_col], row[lat_col]), axis=1)
+    gdf = gpd.GeoDataFrame(df, geometry="geometry", crs=crs)
     return gdf
 
 
 def joindre_communes(gdf_irve, communes):
-    communes = communes.to_crs(gdf_irve.crs)  
+    communes = communes.to_crs(gdf_irve.crs)
     gdf_result = gpd.sjoin(
         gdf_irve,
-        communes[['INSEE_COM', 'NOM', 'geometry']],
+        communes[["INSEE_COM", "NOM", "geometry"]],
         how="left",
-        predicate="within"
+        predicate="within",
     )
     return gdf_result
 
@@ -64,35 +62,32 @@ def ajouter_codes_geo(df_irve, gdf_result, var="total"):
         raise ValueError("L'argument 'var' doit être 'both', 'manq' ou 'total'.")
     df_irve = df_irve.copy()
     if var != "total":
-        df_irve["code_geo_manquant"] = df_irve["code_insee_commune"].fillna(gdf_result["INSEE_COM"])
+        df_irve["code_geo_manquant"] = df_irve["code_insee_commune"].fillna(
+            gdf_result["INSEE_COM"]
+        )
         df_irve["nom_commune"] = gdf_result["NOM"]
     if var != "manq":
         df_irve["code_geo_total"] = gdf_result["INSEE_COM"]
     return df_irve
 
 
-def afficher_matrice_correlation(df, method='spearman', figsize=(14, 10)):
+def afficher_matrice_correlation(df, method="spearman", figsize=(14, 10)):
     """
     Calcule et affiche la heatmap des corrélations.
     """
     # On ne garde que les colonnes numériques et on drop les NaN pour le calcul
-    df_num = df.select_dtypes(include=['number']).dropna()
+    df_num = df.select_dtypes(include=["number"]).dropna()
     corr_matrix = df_num.corr(method=method)
 
     plt.figure(figsize=figsize)
     sns.heatmap(
-        corr_matrix,
-        annot=True,
-        cmap='coolwarm',
-        center=0,
-        fmt=".2f",
-        linewidths=0.5
+        corr_matrix, annot=True, cmap="coolwarm", center=0, fmt=".2f", linewidths=0.5
     )
     plt.title(f"Matrice de corrélation ({method})", fontsize=14)
-    plt.xticks(rotation=75, ha='right')
+    plt.xticks(rotation=75, ha="right")
     plt.tight_layout()
     plt.show()
-   
+
     return corr_matrix
 
 
@@ -105,11 +100,13 @@ def identifier_fortes_correlations(corr_matrix, threshold=0.70):
         for j in range(i):
             val = corr_matrix.iloc[i, j]
             if abs(val) >= threshold:
-                fortes_corr.append({
-                    'v1': corr_matrix.columns[i],
-                    'v2': corr_matrix.columns[j],
-                    'val': val
-                })
+                fortes_corr.append(
+                    {
+                        "v1": corr_matrix.columns[i],
+                        "v2": corr_matrix.columns[j],
+                        "val": val,
+                    }
+                )
     return fortes_corr
 
 
@@ -120,4 +117,3 @@ def analyser_recouvrement_cles(set_a, set_b, nom_a, nom_b):
     print(f"--- Comparaison {nom_a} vs {nom_b} ---")
     print(f"Codes de {nom_a} absents dans {nom_b} : {manquants_dans_b}")
     print(f"Codes de {nom_b} absents dans {nom_a} : {manquants_dans_a}\n")
-    
