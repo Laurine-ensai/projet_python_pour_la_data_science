@@ -102,8 +102,6 @@ def clean_irve_variables_finales(df):
         'prise_type_ef',
         'prise_type_2',
         'prise_type_combo_ccs',
-        'prise_type_chademo',
-        'gratuit',
         'paiement_cb',
         'paiement_autre'
     ]
@@ -117,8 +115,6 @@ def clean_irve_variables_finales(df):
         'prise_type_ef',
         'prise_type_2',
         'prise_type_combo_ccs',
-        'prise_type_chademo',
-        'gratuit',
         'paiement_cb',
         'paiement_autre'
     ]

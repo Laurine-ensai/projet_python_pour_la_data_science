@@ -16,10 +16,8 @@ def creer_features_irve(df_irve, col_geo="code_geo_total"):
 
         pct_type_2=('prise_type_2', 'mean'),
         pct_combo_ccs=('prise_type_combo_ccs', 'mean'),
-        pct_chademo=('prise_type_chademo', 'mean'),
         pct_type_ef=('prise_type_ef', 'mean'),
 
-        pct_gratuit=('gratuit', 'mean'),
         pct_paiement_cb=('paiement_cb', 'mean'),
         pct_paiement_autre=('paiement_autre', 'mean'),
 
