@@ -1,5 +1,7 @@
 import pandas as pd
 from cartiflette import carti_download
+import os
+import s3fs
 
 
 def load_irve_data(path_or_url):
@@ -60,4 +62,21 @@ def load_all_datasets(paths_dict):
     df_irve = load_irve_data(paths_dict['irve'])
     df_revenu = load_revenu_data(paths_dict['revenu'])
     df_ve = load_ve_immatriculations(paths_dict['ve'])  
+    return df_irve, df_revenu, df_ve
+
+
+def load_data_onyxia(bucket):
+
+    S3_ENDPOINT_URL = "https://" + os.environ["AWS_S3_ENDPOINT"]
+    fs = s3fs.S3FileSystem(client_kwargs={"endpoint_url": S3_ENDPOINT_URL})
+
+    with fs.open(f"{bucket}/diffusion/raw/irve_raw.csv", "rb") as f:
+        df_irve = pd.read_csv(f)
+
+    with fs.open(f"{bucket}/diffusion/raw/revenu_raw.csv", "rb") as f:
+        df_revenu = pd.read_csv(f)
+
+    with fs.open(f"{bucket}/diffusion/raw/ve_raw.csv", "rb") as f:
+        df_ve = pd.read_csv(f)
+
     return df_irve, df_revenu, df_ve
