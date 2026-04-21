@@ -221,7 +221,7 @@ def regression_lasso_depuis_notebook(
     if save_selected_path is not None:
         df_selected.to_csv(save_selected_path, index=False)
 
-    results = {{
+    results = {
         "df_prepare": df_propre,
         "X": X,
         "y": y,
@@ -237,10 +237,11 @@ def regression_lasso_depuis_notebook(
         "score_test": pipeline.score(X_test, y_test),
         "mse": mean_squared_error(y_test, y_pred),
         "r2": r2_score(y_test, y_pred),
-        "y_pred": y_pred
-    }, {"selected_features": selected_features,
+        "y_pred": y_pred,
+        "selected_features": selected_features,
         "removed_features": removed_features,
-        "df_selected": df_selected}}
+        "df_selected": df_selected
+    }
 
     if log_target:
         y_test_exp = np.expm1(y_test)
